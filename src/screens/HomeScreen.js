@@ -1,10 +1,11 @@
+// src/screens/HomeScreen.js
 import { View, Text, StyleSheet } from "react-native";
 
 export default function HomeScreen() {
   return (
-    <view style={styles.container}>
-      <text style={styles.title}>Panel principal del club</text>
-    </view>
+    <View style={styles.container}>
+      <Text style={styles.title}>¡Panel Principal de Robótica!</Text>
+    </View>
   );
 }
 
