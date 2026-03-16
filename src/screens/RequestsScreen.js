@@ -1,44 +1,17 @@
 // src/screens/RequestsScreen.js
-import React, { useState } from "react";
+import React from "react";
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  Alert,
 } from "react-native";
-
-// Datos falsos de solicitudes pendientes
-const MOCK_REQUESTS = [
-  {
-    id: "1",
-    nombre: "Ana López",
-    carrera: "Ing. Sistemas",
-    semestre: "4to",
-    motivo: "Quiero aprender a programar brazos robóticos.",
-  },
-  {
-    id: "2",
-    nombre: "Carlos Ruiz",
-    carrera: "Ing. Electrónica",
-    semestre: "6to",
-    motivo: "Me apasiona la automatización.",
-  },
-];
+import { useRequests } from "../hooks/useRequests"; // ¡Importamos nuestro nuevo Hook!
 
 export default function RequestsScreen() {
-  const [requests, setRequests] = useState(MOCK_REQUESTS);
-
-  const handleAccept = (id, nombre) => {
-    // En el futuro, esto le dirá al backend de Java que genere la contraseña y envíe el correo
-    setRequests(requests.filter((req) => req.id !== id));
-    Alert.alert("Aceptado", `Se ha generado la cuenta para ${nombre}.`);
-  };
-
-  const handleReject = (id) => {
-    setRequests(requests.filter((req) => req.id !== id));
-  };
+  // Extraemos la lógica y el estado en una sola línea
+  const { requests, handleAccept, handleReject } = useRequests();
 
   const renderRequest = ({ item }) => (
     <View style={styles.card}>
@@ -122,7 +95,7 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
     borderWidth: 1,
     borderColor: "#ff4d4d",
-  }, // Botón fantasma rojo
+  },
   acceptButton: { backgroundColor: "#4da6ff" },
   buttonText: { color: "#fff", fontWeight: "bold" },
   emptyText: {
