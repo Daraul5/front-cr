@@ -1,5 +1,5 @@
 // src/screens/HomeScreen.js
-import React from "react";
+import React, { useContext } from "react"; // <-- 1. Importamos useContext
 import {
   View,
   FlatList,
@@ -8,8 +8,9 @@ import {
   Text,
 } from "react-native";
 import EventCard from "../components/EventCard";
-import AddEventModal from "../components/AddEventModal"; // ¡Importamos nuestro nuevo componente!
+import AddEventModal from "../components/AddEventModal";
 import { useEvents } from "../hooks/useEvents";
+import { AuthContext } from "../context/AuthContext"; // <-- 2. Importamos el contexto global
 
 export default function HomeScreen() {
   const {
@@ -22,6 +23,9 @@ export default function HomeScreen() {
     setNewDescription,
     handleAddEvent,
   } = useEvents();
+
+  // 3. Extraemos al usuario actual para saber su rol
+  const { user } = useContext(AuthContext);
 
   return (
     <View style={styles.container}>
@@ -38,28 +42,33 @@ export default function HomeScreen() {
         )}
       />
 
-      <TouchableOpacity
-        style={styles.fab}
-        activeOpacity={0.8}
-        onPress={() => setModalVisible(true)}
-      >
-        <Text style={styles.fabIcon}>+</Text>
-      </TouchableOpacity>
+      {/* 4. ¡LA MAGIA DE LOS ROLES! Solo renderiza esto si existe un usuario y su rol es ADMIN */}
+      {user?.rol === "ADMIN" && (
+        <>
+          <TouchableOpacity
+            style={styles.fab}
+            activeOpacity={0.8}
+            onPress={() => setModalVisible(true)}
+          >
+            <Text style={styles.fabIcon}>+</Text>
+          </TouchableOpacity>
 
-      {/* Aquí mandamos a llamar a nuestro componente Modal aislado */}
-      <AddEventModal
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)} // Le pasamos la función para que se sepa cerrar a sí mismo
-        titleValue={newTitle}
-        onTitleChange={setNewTitle}
-        descriptionValue={newDescription}
-        onDescriptionChange={setNewDescription}
-        onSave={handleAddEvent}
-      />
+          <AddEventModal
+            visible={modalVisible}
+            onClose={() => setModalVisible(false)}
+            titleValue={newTitle}
+            onTitleChange={setNewTitle}
+            descriptionValue={newDescription}
+            onDescriptionChange={setNewDescription}
+            onSave={handleAddEvent}
+          />
+        </>
+      )}
     </View>
   );
 }
 
+// ... (Tus estilos se quedan exactamente igual)
 // Estilos súper reducidos, solo lo que le pertenece al fondo, la lista y el botón flotante
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#121212" },

@@ -1,5 +1,5 @@
 // src/screens/LoginScreen.js
-import React, { useState } from "react";
+import React, { useState, useContext } from "react"; // <-- 1. Agregamos useContext
 import {
   View,
   Text,
@@ -9,14 +9,20 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
+import { AuthContext } from "../context/AuthContext"; // <-- 2. Importamos tu contexto
 
 export default function LoginScreen({ navigation }) {
   const [correo, setCorreo] = useState("");
   const [password, setPassword] = useState("");
 
+  // 3. Extraemos la función 'login' del estado global
+  const { login } = useContext(AuthContext);
+
   const handleLogin = () => {
-    // Aquí es donde mandaremos el correo y contraseña al backend en el futuro
-    console.log("Intentando iniciar sesión con:", correo);
+    if (correo.trim() === "" || password.trim() === "") return;
+
+    // 4. Ejecutamos la función global con los datos del input
+    login(correo, password);
   };
 
   return (
@@ -38,9 +44,9 @@ export default function LoginScreen({ navigation }) {
           placeholderTextColor="#888"
           value={correo}
           onChangeText={setCorreo}
-          keyboardType="email-address" // Muestra el teclado con el "@" a la mano
+          keyboardType="email-address"
           autoCapitalize="none"
-          keyboardAppearance="dark" // Evita que la primera letra sea mayúscula (útil para correos)
+          keyboardAppearance="dark" // El toque oscuro
         />
 
         <TextInput
@@ -50,14 +56,13 @@ export default function LoginScreen({ navigation }) {
           value={password}
           onChangeText={setPassword}
           secureTextEntry={true}
-          keyboardAppearance="dark" // ¡Esta es la magia que oculta el texto con puntitos!
+          keyboardAppearance="dark" // El toque oscuro
         />
 
         <TouchableOpacity style={styles.button} onPress={handleLogin}>
           <Text style={styles.buttonText}>Iniciar Sesión</Text>
         </TouchableOpacity>
 
-        {/* Enlace para regresar a la pantalla de registro */}
         <TouchableOpacity
           style={styles.linkButton}
           onPress={() => navigation.navigate("Register")}
@@ -71,6 +76,7 @@ export default function LoginScreen({ navigation }) {
   );
 }
 
+// ... (Tus estilos se quedan exactamente igual)
 const styles = StyleSheet.create({
   container: {
     flex: 1,

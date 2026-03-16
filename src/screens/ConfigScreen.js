@@ -1,36 +1,45 @@
 // src/screens/ConfigScreen.js
-import React from "react";
+import React, { useContext } from "react"; // <-- 1. Agregamos useContext
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { AuthContext } from "../context/AuthContext"; // <-- 2. Importamos tu contexto
 
 export default function ConfigScreen() {
+  // 3. Extraemos al usuario actual y la función para salir
+  const { user, logout } = useContext(AuthContext);
+
   const handleLogout = () => {
-    // En el futuro, esto limpiará el AuthContext y el Token JWT
-    console.log("Cerrando sesión...");
+    logout(); // 4. Ejecutamos la salida global
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.profileHeader}>
-        {/* Un círculo simple simulando una foto de perfil */}
         <View style={styles.avatar}>
-          <Text style={styles.avatarText}>RA</Text>
+          {/* Mostramos la primera letra del nombre dinámicamente */}
+          <Text style={styles.avatarText}>
+            {user?.nombre ? user.nombre.charAt(0).toUpperCase() : "U"}
+          </Text>
         </View>
-        <Text style={styles.name}>Raul (Admin)</Text>
-        <Text style={styles.email}>raul@universidad.edu</Text>
+
+        {/* Usamos los datos reales del contexto */}
+        <Text style={styles.name}>{user?.nombre || "Usuario"}</Text>
+        <Text style={styles.email}>
+          {user?.correo || "correo@universidad.edu"}
+        </Text>
       </View>
 
       <View style={styles.infoSection}>
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Rol actual:</Text>
+          <Text style={styles.infoValue}>{user?.rol || "USER"}</Text>
+        </View>
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Carrera:</Text>
           <Text style={styles.infoValue}>Ing. Mecatrónica</Text>
         </View>
         <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Semestre:</Text>
-          <Text style={styles.infoValue}>8vo</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>No. Control:</Text>
-          <Text style={styles.infoValue}>19280000</Text>
+          <Text style={styles.infoLabel}>Estado:</Text>
+          <Text style={[styles.infoValue, { color: "#4da6ff" }]}>Activo</Text>
         </View>
       </View>
 
@@ -41,6 +50,7 @@ export default function ConfigScreen() {
   );
 }
 
+// ... (Tus estilos se quedan exactamente igual)
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#121212", padding: 24 },
   profileHeader: { alignItems: "center", marginBottom: 40, marginTop: 20 },

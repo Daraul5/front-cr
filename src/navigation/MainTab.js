@@ -1,68 +1,83 @@
 // src/navigation/MainTab.js
-import React from "react";
+import React, { useContext } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { AuthContext } from "../context/AuthContext";
+
 import HomeScreen from "../screens/HomeScreen";
 import RegisterScreen from "../screens/RegisterScreen";
 import LoginScreen from "../screens/LoginScreen";
 import ChatScreen from "../screens/ChatScreen";
 import ConfigScreen from "../screens/ConfigScreen";
-import RequestScreen from "../screens/RequestsScreen";
+import RequestsScreen from "../screens/RequestsScreen";
 
 const Tab = createBottomTabNavigator();
 
 export default function MainTab() {
+  const { user } = useContext(AuthContext);
+
   return (
     <Tab.Navigator
-      initialRouteName="Register" // Lo ponemos de inicio para que lo veas apenas cargue
+      // Quitamos el initialRouteName para que tome por defecto la primera de la lista (Eventos)
       screenOptions={{
         headerStyle: { backgroundColor: "#000000" },
         headerTintColor: "#ffffff",
-        tabBarStyle: {
-          backgroundColor: "#000000",
-          borderTopColor: "#333333",
-        },
+        tabBarStyle: { backgroundColor: "#000000", borderTopColor: "#333333" },
         tabBarActiveTintColor: "#4da6ff",
         tabBarInactiveTintColor: "#888888",
       }}
     >
-      {/* Pestaña 1: La solicitud para los nuevos */}
-      <Tab.Screen
-        name="Register"
-        component={RegisterScreen}
-        options={{ title: "Registro" }}
-      />
-
-      {/* Pestaña 2: El acceso para los ya aceptados */}
-      <Tab.Screen
-        name="Login"
-        component={LoginScreen}
-        options={{ title: "Acceso" }}
-      />
-      {/* Pestaña 3: Perfil/Configuracion*/}
-      <Tab.Screen
-        name="Perfil"
-        component={ConfigScreen}
-        options={{ title: "Perfil" }}
-      />
-      {/* Pestaña 4: Los eventos del club */}
+      {/* 1. EVENTOS SIEMPRE VISIBLE: Lo sacamos de la condición para que todos lo vean */}
       <Tab.Screen
         name="Home"
         component={HomeScreen}
         options={{ title: "Eventos" }}
       />
 
-      {/* Pestaña 5: El chat de miembros */}
-      <Tab.Screen
-        name="Chat"
-        component={ChatScreen}
-        options={{ title: "Chat" }}
-      />
-      {/* Pestaña 6: Las solicitudes del club */}
-      <Tab.Screen
-        name="Solcitudes"
-        component={RequestScreen}
-        options={{ title: "Solicitudes" }}
-      />
+      {!user ? (
+        <>
+          {/* 2. REGISTRO: Visible en la barra para los invitados */}
+          <Tab.Screen
+            name="Register"
+            component={RegisterScreen}
+            options={{ title: "Registro" }}
+          />
+
+          {/* 3. LOGIN OCULTO: Existe en el navegador, pero ocultamos su icono en la barra */}
+          {/* 3. LOGIN OCULTO: Sin botón y sin ocupar espacio */}
+          <Tab.Screen
+            name="Login"
+            component={LoginScreen}
+            options={{
+              title: "Acceso",
+              tabBarButton: () => null, // Lo hace invisible
+              tabBarItemStyle: { display: "none" }, // ¡Esto elimina el hueco fantasma!
+            }}
+          />
+        </>
+      ) : (
+        <>
+          {/* RUTAS PRIVADAS (Solo cuando inician sesión) */}
+          <Tab.Screen
+            name="Chat"
+            component={ChatScreen}
+            options={{ title: "Chat" }}
+          />
+
+          {user.rol === "ADMIN" && (
+            <Tab.Screen
+              name="Requests"
+              component={RequestsScreen}
+              options={{ title: "Admin" }}
+            />
+          )}
+
+          <Tab.Screen
+            name="Config"
+            component={ConfigScreen}
+            options={{ title: "Perfil" }}
+          />
+        </>
+      )}
     </Tab.Navigator>
   );
 }
