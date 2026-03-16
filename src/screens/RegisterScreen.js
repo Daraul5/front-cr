@@ -1,14 +1,14 @@
 // src/screens/RegisterScreen.js
 import React, { useState } from "react";
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  StyleSheet, 
-  KeyboardAvoidingView, 
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  KeyboardAvoidingView,
   Platform,
-  ScrollView 
+  ScrollView,
 } from "react-native";
 
 export default function RegisterScreen({ navigation }) {
@@ -22,20 +22,28 @@ export default function RegisterScreen({ navigation }) {
 
   const handleRegister = () => {
     // Aquí luego enviaremos los datos a la pestaña de solicitudes del Admin
-    console.log("Solicitud enviada:", { nombre, carrera, semestre, numeroControl, correo, motivo });
+    console.log("Solicitud enviada:", {
+      nombre,
+      carrera,
+      semestre,
+      numeroControl,
+      correo,
+      motivo,
+    });
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
+    <KeyboardAvoidingView
+      style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       {/* ScrollView permite deslizar el contenido cuando el teclado lo empuja */}
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        
         <View style={styles.header}>
           <Text style={styles.title}>Únete al Club</Text>
-          <Text style={styles.subtitle}>Envía tu solicitud para evaluación</Text>
+          <Text style={styles.subtitle}>
+            Envía tu solicitud para evaluación
+          </Text>
         </View>
 
         <View style={styles.form}>
@@ -45,6 +53,7 @@ export default function RegisterScreen({ navigation }) {
             placeholderTextColor="#888"
             value={nombre}
             onChangeText={setNombre}
+            keyboardAppearance="dark"
           />
 
           <TextInput
@@ -53,6 +62,7 @@ export default function RegisterScreen({ navigation }) {
             placeholderTextColor="#888"
             value={carrera}
             onChangeText={setCarrera}
+            keyboardAppearance="dark"
           />
 
           {/* Fila para agrupar Semestre y No. de Control para ahorrar espacio */}
@@ -63,6 +73,7 @@ export default function RegisterScreen({ navigation }) {
               placeholderTextColor="#888"
               value={semestre}
               onChangeText={setSemestre}
+              keyboardAppearance="dark"
             />
             <TextInput
               style={[styles.input, styles.halfInput]}
@@ -70,7 +81,8 @@ export default function RegisterScreen({ navigation }) {
               placeholderTextColor="#888"
               value={numeroControl}
               onChangeText={setNumeroControl}
-              keyboardType="numeric" // Muestra el teclado numérico en el celular
+              keyboardType="numeric"
+              keyboardAppearance="dark" // Muestra el teclado numérico en el celular
             />
           </View>
 
@@ -81,7 +93,8 @@ export default function RegisterScreen({ navigation }) {
             value={correo}
             onChangeText={setCorreo}
             keyboardType="email-address"
-            autoCapitalize="none" // Evita que la primera letra se ponga en mayúscula
+            autoCapitalize="none"
+            keyboardAppearance="dark" // Evita que la primera letra se ponga en mayúscula
           />
 
           <TextInput
@@ -91,6 +104,7 @@ export default function RegisterScreen({ navigation }) {
             value={motivo}
             onChangeText={setMotivo}
             multiline
+            keyboardAppearance="dark"
           />
 
           <TouchableOpacity style={styles.button} onPress={handleRegister}>
@@ -98,14 +112,15 @@ export default function RegisterScreen({ navigation }) {
           </TouchableOpacity>
 
           {/* Botón para cambiar al Login si ya tienen cuenta */}
-          <TouchableOpacity 
-            style={styles.linkButton} 
+          <TouchableOpacity
+            style={styles.linkButton}
             onPress={() => navigation.navigate("Login")}
           >
-            <Text style={styles.linkText}>¿Ya fuiste aceptado? Inicia sesión aquí</Text>
+            <Text style={styles.linkText}>
+              ¿Ya fuiste aceptado? Inicia sesión aquí
+            </Text>
           </TouchableOpacity>
         </View>
-
       </ScrollView>
     </KeyboardAvoidingView>
   );

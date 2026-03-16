@@ -45,6 +45,7 @@ export default function ChatScreen() {
           value={inputText}
           onChangeText={setInputText}
           multiline
+          keyboardAppearance="dark"
         />
 
         {/* Aquí está tu nuevo botón con forma de avioncito */}

@@ -1,13 +1,13 @@
 // src/screens/LoginScreen.js
 import React, { useState } from "react";
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  StyleSheet, 
-  KeyboardAvoidingView, 
-  Platform 
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 
 export default function LoginScreen({ navigation }) {
@@ -20,14 +20,16 @@ export default function LoginScreen({ navigation }) {
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
+    <KeyboardAvoidingView
+      style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <View style={styles.formContainer}>
         <View style={styles.header}>
           <Text style={styles.title}>Bienvenido de vuelta</Text>
-          <Text style={styles.subtitle}>Ingresa al panel del Club de Robótica</Text>
+          <Text style={styles.subtitle}>
+            Ingresa al panel del Club de Robótica
+          </Text>
         </View>
 
         <TextInput
@@ -37,7 +39,8 @@ export default function LoginScreen({ navigation }) {
           value={correo}
           onChangeText={setCorreo}
           keyboardType="email-address" // Muestra el teclado con el "@" a la mano
-          autoCapitalize="none"        // Evita que la primera letra sea mayúscula (útil para correos)
+          autoCapitalize="none"
+          keyboardAppearance="dark" // Evita que la primera letra sea mayúscula (útil para correos)
         />
 
         <TextInput
@@ -46,7 +49,8 @@ export default function LoginScreen({ navigation }) {
           placeholderTextColor="#888"
           value={password}
           onChangeText={setPassword}
-          secureTextEntry={true}       // ¡Esta es la magia que oculta el texto con puntitos!
+          secureTextEntry={true}
+          keyboardAppearance="dark" // ¡Esta es la magia que oculta el texto con puntitos!
         />
 
         <TouchableOpacity style={styles.button} onPress={handleLogin}>
@@ -54,11 +58,13 @@ export default function LoginScreen({ navigation }) {
         </TouchableOpacity>
 
         {/* Enlace para regresar a la pantalla de registro */}
-        <TouchableOpacity 
-          style={styles.linkButton} 
+        <TouchableOpacity
+          style={styles.linkButton}
           onPress={() => navigation.navigate("Register")}
         >
-          <Text style={styles.linkText}>¿Aún no envías tu solicitud? Regístrate aquí</Text>
+          <Text style={styles.linkText}>
+            ¿Aún no envías tu solicitud? Regístrate aquí
+          </Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
