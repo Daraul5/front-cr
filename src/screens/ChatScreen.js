@@ -13,9 +13,13 @@ import { Ionicons } from "@expo/vector-icons"; // ¡La librería mágica de icon
 import ChatBubble from "../components/ChatBubble";
 import { useChat } from "../hooks/useChat"; // Importamos el cerebro
 
-export default function ChatScreen() {
-  // Extraemos las variables y funciones desde nuestro Hook
-  const { messages, inputText, setInputText, handleSend } = useChat();
+// 1. RECIBIMOS 'route' EN LAS PROPIEDADES
+export default function ChatScreen({ route }) {
+  // 2. EXTRAEMOS LOS DATOS DEL CANAL QUE TOCAMOS EN LA LISTA
+  const { channelId = "1", channelName = "Chat General" } = route?.params || {};
+
+  // 3. LE PASAMOS EL ID AL HOOK PARA QUE SOLO TRAIGA MENSAJES DE ESTE CANAL
+  const { messages, inputText, setInputText, handleSend } = useChat(channelId);
 
   return (
     <KeyboardAvoidingView
@@ -40,7 +44,7 @@ export default function ChatScreen() {
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
-          placeholder="Escribe un mensaje..."
+          placeholder={`Mensaje en ${channelName}...`} // 4. PLACEHOLDER DINÁMICO
           placeholderTextColor="#888"
           value={inputText}
           onChangeText={setInputText}
@@ -48,7 +52,6 @@ export default function ChatScreen() {
           keyboardAppearance="dark"
         />
 
-        {/* Aquí está tu nuevo botón con forma de avioncito */}
         <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
           <Ionicons
             name="send"
@@ -87,15 +90,15 @@ const styles = StyleSheet.create({
   },
   sendButton: {
     backgroundColor: "#4da6ff",
-    width: 44, // Le damos un ancho y alto fijos para hacerlo un círculo perfecto
+    width: 44, 
     height: 44,
-    borderRadius: 22, // La mitad de 44
+    borderRadius: 22, 
     justifyContent: "center",
     alignItems: "center",
     marginLeft: 8,
     marginBottom: 2,
   },
   sendIcon: {
-    marginLeft: 4, // Un truco visual: el icono del avioncito suele verse desfasado, esto lo centra perfectamente en el círculo
+    marginLeft: 4, 
   },
 });

@@ -1,23 +1,54 @@
 // src/navigation/MainTab.js
 import React, { useContext } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { createNativeStackNavigator } from "@react-navigation/native-stack"; // <-- 1. Importamos el Stack
 import { AuthContext } from "../context/AuthContext";
 
 import HomeScreen from "../screens/HomeScreen";
 import RegisterScreen from "../screens/RegisterScreen";
 import LoginScreen from "../screens/LoginScreen";
-import ChatScreen from "../screens/ChatScreen";
+import ChatScreen from "../screens/ChatScreen"; // Esta será nuestra Sala de Chat (ChatRoom)
+import ChannelsScreen from "../screens/ChannelsScreen"; // <-- 2. Importamos los Canales
 import ConfigScreen from "../screens/ConfigScreen";
 import RequestsScreen from "../screens/RequestsScreen";
 
 const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
+
+// 3. CREAMOS EL STACK EXCLUSIVO PARA EL CHAT
+function ChatStackNavigator() {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: { backgroundColor: "#000000" },
+        headerTintColor: "#ffffff",
+      }}
+    >
+      {/* La base de la pila: La lista de Canales */}
+      <Stack.Screen 
+        name="Channels" 
+        component={ChannelsScreen} 
+        options={{ headerShown: false }} // Ocultamos el header aquí para no chocar con el del Tab
+      />
+      {/* La Sala de Chat: Se abre por encima al tocar un canal */}
+      <Stack.Screen 
+        name="ChatRoom" 
+        component={ChatScreen} 
+        // Hacemos que el título de la pantalla sea dinámico según el canal que tocaste
+        options={({ route }) => ({ 
+          title: route.params?.channelName || "Sala de Chat",
+          headerBackTitleVisible: false, // Quita el texto "Atrás" en iOS para que se vea más limpio
+        })} 
+      />
+    </Stack.Navigator>
+  );
+}
 
 export default function MainTab() {
   const { user } = useContext(AuthContext);
 
   return (
     <Tab.Navigator
-      // Quitamos el initialRouteName para que tome por defecto la primera de la lista (Eventos)
       screenOptions={{
         headerStyle: { backgroundColor: "#000000" },
         headerTintColor: "#ffffff",
@@ -26,7 +57,7 @@ export default function MainTab() {
         tabBarInactiveTintColor: "#888888",
       }}
     >
-      {/* 1. EVENTOS SIEMPRE VISIBLE: Lo sacamos de la condición para que todos lo vean */}
+      {/* EVENTOS SIEMPRE VISIBLE */}
       <Tab.Screen
         name="Home"
         component={HomeScreen}
@@ -35,32 +66,32 @@ export default function MainTab() {
 
       {!user ? (
         <>
-          {/* 2. REGISTRO: Visible en la barra para los invitados */}
           <Tab.Screen
             name="Register"
             component={RegisterScreen}
             options={{ title: "Registro" }}
           />
 
-          {/* 3. LOGIN OCULTO: Existe en el navegador, pero ocultamos su icono en la barra */}
-          {/* 3. LOGIN OCULTO: Sin botón y sin ocupar espacio */}
           <Tab.Screen
             name="Login"
             component={LoginScreen}
             options={{
               title: "Acceso",
-              tabBarButton: () => null, // Lo hace invisible
-              tabBarItemStyle: { display: "none" }, // ¡Esto elimina el hueco fantasma!
+              tabBarButton: () => null,
+              tabBarItemStyle: { display: "none" },
             }}
           />
         </>
       ) : (
         <>
-          {/* RUTAS PRIVADAS (Solo cuando inician sesión) */}
+          {/* 4. REEMPLAZAMOS LA PANTALLA SIMPLE POR EL STACK */}
           <Tab.Screen
-            name="Chat"
-            component={ChatScreen}
-            options={{ title: "Chat" }}
+            name="ChatTab" 
+            component={ChatStackNavigator} // Llamamos a la función que creamos arriba
+            options={{ 
+              title: "Chat", 
+              headerShown: false // Apagamos el header del Tab para que el Stack tome el control
+            }}
           />
 
           {user.rol === "ADMIN" && (
