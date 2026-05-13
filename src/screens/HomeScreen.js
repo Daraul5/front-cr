@@ -1,222 +1,188 @@
-// src/screens/HomeScreen.js
-import React, { useContext, useState } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { 
   View, 
+  Text, 
   FlatList, 
   StyleSheet, 
   TouchableOpacity, 
-  Text,
-  Modal,
+  ActivityIndicator,
+  RefreshControl,
   Alert
 } from "react-native";
-import EventCard from "../components/EventCard";
-import AddEventModal from "../components/AddEventModal";
-import { useEvents } from "../hooks/useEvents";
+import api from "../api/api";
 import { AuthContext } from "../context/AuthContext";
+import AddEventModal from "../components/AddEventModal";
 
-export default function HomeScreen() {
+export default function HomeScreen({ navigation }) {
   const { user } = useContext(AuthContext);
-  const {
-    events,
-    modalVisible,
-    setModalVisible,
-    newTitle,
-    setNewTitle,
-    newDescription,
-    newType,
-    setNewType,
-    allowRegistration,
-    setAllowRegistration,
-    capacity,
-    setCapacity,
-    eventDate,
-    setEventDate,
-    setNewDescription,
-    handleAddEvent,
-  } = useEvents();
+  const isAdmin = user?.role === "PRESIDENTE" || user?.role === "MESA";
+  
+  const [publicaciones, setPublicaciones] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [filtro, setFiltro] = useState("NOTICIA"); 
 
-  // Estados para el Modal de Detalles (el que se abre al tocar una publicación)
-  const [detailsVisible, setDetailsVisible] = useState(false);
-  const [selectedPost, setSelectedPost] = useState(null);
+  // Estados del Modal
+  const [modalVisible, setModalVisible] = useState(false);
+  const [titulo, setTitulo] = useState("");
+  const [descripcion, setDescripcion] = useState("");
+  const [tipo, setTipo] = useState("NOTICIA");
+  const [fecha, setFecha] = useState("");
+  const [permitirReg, setPermitirReg] = useState(false);
+  const [capacidad, setCapacidad] = useState("");
 
-  // Función para abrir los detalles
-  const handleOpenDetails = (post) => {
-    setSelectedPost(post);
-    setDetailsVisible(true);
+  const fetchPublicaciones = async () => {
+    try {
+      const response = await api.get("/publications"); 
+      
+      // Opcional: Ordenar para que las más nuevas (dateCreation) salgan hasta arriba
+      const ordenadas = response.data.sort((a, b) => {
+        if (!a.dateCreation || !b.dateCreation) return 0;
+        return new Date(b.dateCreation) - new Date(a.dateCreation);
+      });
+
+      setPublicaciones(ordenadas);
+    } catch (error) {
+      console.error("Error al cargar publicaciones:", error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   };
 
-  // Función para unirse a un evento
-  const handleJoinEvent = () => {
-    if (!user) {
-      Alert.alert("Acceso Denegado", "Debes iniciar sesión para unirte a un evento.");
+  useEffect(() => {
+    fetchPublicaciones();
+  }, []);
+
+  const publicacionesFiltradas = publicaciones.filter(pub => pub.type === filtro);
+
+  const handleGuardarPublicacion = async () => {
+    if (!titulo || !descripcion) {
+      Alert.alert("Campos vacíos", "El título y la descripción son obligatorios.");
       return;
     }
-    // Aquí en el futuro harás tu axios.post a INSCRIPCION_PUBLICACION
-    Alert.alert("¡Inscrito!", `Te has unido al evento: ${selectedPost.title}`);
-    setDetailsVisible(false);
+
+    // AJUSTE: Mapeamos exactamente a los nombres de tu base de datos
+    const nuevaPublicacion = {
+      tittle: titulo, // <-- ¡Con doble T!
+      description: descripcion, // <-- En lugar de content
+      type: tipo,
+      eventDate: fecha,
+      doInscription: permitirReg, // <-- Tu booleano de inscripción
+      capacity: permitirReg && capacidad ? parseInt(capacidad) : 0, // <-- Capacidad numérica
+      numControlAutor: user?.controlNumber // <-- ¡Guardamos automáticamente quién lo publicó!
+    };
+
+    try {
+      await api.post("/publications", nuevaPublicacion);
+      Alert.alert("¡Éxito!", "La publicación ha sido creada.");
+      
+      setTitulo("");
+      setDescripcion("");
+      setFecha("");
+      setCapacidad("");
+      setPermitirReg(false);
+      setModalVisible(false);
+      
+      fetchPublicaciones();
+    } catch (error) {
+      console.error("Error al publicar:", error);
+      Alert.alert("Error", "Hubo un problema al crear la publicación.");
+    }
   };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <ActivityIndicator size="large" color="#4da6ff" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
+      <View style={styles.tabContainer}>
+        <TouchableOpacity style={[styles.tab, filtro === "NOTICIA" && styles.activeTab]} onPress={() => setFiltro("NOTICIA")}>
+          <Text style={[styles.tabText, filtro === "NOTICIA" && styles.activeTabText]}>Noticias</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={[styles.tab, filtro === "EVENTO" && styles.activeTab]} onPress={() => setFiltro("EVENTO")}>
+          <Text style={[styles.tabText, filtro === "EVENTO" && styles.activeTabText]}>Eventos</Text>
+        </TouchableOpacity>
+      </View>
+
       <FlatList
-        data={events}
-        keyExtractor={(item) => item.id}
+        data={publicacionesFiltradas}
+        keyExtractor={(item) => item.idPublication?.toString() || Math.random().toString()}
         contentContainerStyle={styles.listContainer}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchPublicaciones(); }} tintColor="#4da6ff" />}
         renderItem={({ item }) => (
-          <EventCard
-            title={item.title}
-            date={item.date}
-            description={item.description}
-            tipo={item.tipo || "EVENTO"} // Le pasamos el tipo
-            onPress={() => handleOpenDetails(item)} // Al tocar, abre el modal
-          />
+          <TouchableOpacity 
+            style={styles.card}
+            onPress={() => navigation.navigate("EventDetail", { evento: item })}
+          >
+            <Text style={styles.cardTitle}>{item.tittle}</Text> 
+            <Text style={styles.cardContent}>{item.description}</Text>
+            
+            {item.eventDate ? (
+                <View style={styles.eventDateContainer}>
+                  <Text style={styles.eventDateText}>📅 Cuándo: {item.eventDate}</Text>
+                </View>
+            ) : null}
+
+            {/* Opcional: Si quieres mostrar la capacidad si hay inscripciones */}
+            {item.doInscription && (
+                <Text style={{color: '#4da6ff', marginTop: 5}}>
+                  👥 Cupo: {item.capacity} personas
+                </Text>
+            )}
+          </TouchableOpacity>
         )}
+        ListEmptyComponent={<Text style={styles.emptyText}>No hay {filtro.toLowerCase()}s por el momento.</Text>}
       />
 
-      {/* Modal de Detalles de la Publicación */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={detailsVisible}
-        onRequestClose={() => setDetailsVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.detailsModalContent}>
-            
-            <View style={styles.detailsHeader}>
-              <Text style={styles.detailsTag}>
-                {selectedPost?.tipo === "EVENTO" ? "📌 Detalles del Evento" : "📰 Noticia"}
-              </Text>
-              <TouchableOpacity onPress={() => setDetailsVisible(false)}>
-                <Text style={styles.closeIcon}>✕</Text>
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.detailsTitle}>{selectedPost?.title}</Text>
-            <Text style={styles.detailsDate}>📅 {selectedPost?.date}</Text>
-            <Text style={styles.detailsDesc}>{selectedPost?.description}</Text>
-
-            {/* LA MAGIA CONDICIONAL: Solo mostramos el botón si es EVENTO */}
-            {selectedPost?.tipo === "EVENTO" && (
-              <TouchableOpacity style={styles.joinButton} onPress={handleJoinEvent}>
-                <Text style={styles.joinButtonText}>Unirse al Evento</Text>
-              </TouchableOpacity>
-            )}
-
-          </View>
-        </View>
-      </Modal>
-
-      {/* Botón flotante para el ADMIN (Crear nueva publicación) */}
-      {user?.rol === "ADMIN" && (
-        <>
-          <TouchableOpacity style={styles.fab} activeOpacity={0.8} onPress={() => setModalVisible(true)}>
-            <Text style={styles.fabIcon}>+</Text>
-          </TouchableOpacity>
-
-          
-          <AddEventModal
-            visible={modalVisible}
-            onClose={() => setModalVisible(false)}
-            onSave={handleAddEvent}
-            titleValue={newTitle}
-            onTitleChange={setNewTitle}
-            descriptionValue={newDescription}
-            onDescriptionChange={setNewDescription}
-            typeValue={newType}
-            onTypeChange={setNewType}
-            allowReg={allowRegistration} // <-- Nuevo
-            onAllowRegChange={setAllowRegistration} // <-- Nuevo
-            capacityValue={capacity} // <-- Nuevo
-            onCapacityChange={setCapacity} // <-- Nuevo
-            dateValue={eventDate} // <-- Nuevo
-            onDateChange={setEventDate} // <-- Nuevo
-          />
-        </>
+      {isAdmin && (
+        <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)}>
+          <Text style={styles.fabIcon}>+</Text>
+        </TouchableOpacity>
       )}
+
+      <AddEventModal 
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        onSave={handleGuardarPublicacion}
+        titleValue={titulo}
+        onTitleChange={setTitulo}
+        descriptionValue={descripcion}
+        onDescriptionChange={setDescripcion}
+        typeValue={tipo}
+        onTypeChange={setTipo}
+        dateValue={fecha}
+        onDateChange={setFecha}
+        allowReg={permitirReg}
+        onAllowRegChange={setPermitirReg}
+        capacityValue={capacidad}
+        onCapacityChange={setCapacidad}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#121212" },
-  listContainer: { padding: 16, paddingBottom: 100 },
-  fab: {
-    position: "absolute",
-    bottom: 24,
-    right: 24,
-    backgroundColor: "#4da6ff",
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    justifyContent: "center",
-    alignItems: "center",
-    elevation: 5,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-  },
-  fabIcon: { color: "#fff", fontSize: 32, fontWeight: "300", marginTop: -2 },
-  
-  // Estilos del nuevo Modal de Detalles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.7)",
-    justifyContent: "flex-end", // Sale desde abajo
-  },
-  detailsModalContent: {
-    backgroundColor: "#1e1e1e",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-    minHeight: "40%",
-    borderWidth: 1,
-    borderColor: "#333",
-  },
-  detailsHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  detailsTag: {
-    color: "#a0a0a0",
-    fontSize: 14,
-    fontWeight: "bold",
-    textTransform: "uppercase",
-  },
-  closeIcon: {
-    color: "#888",
-    fontSize: 24,
-    fontWeight: "bold",
-  },
-  detailsTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#fff",
-    marginBottom: 8,
-  },
-  detailsDate: {
-    fontSize: 16,
-    color: "#4da6ff",
-    marginBottom: 16,
-  },
-  detailsDesc: {
-    fontSize: 16,
-    color: "#d0d0d0",
-    lineHeight: 24,
-    marginBottom: 24,
-  },
-  joinButton: {
-    backgroundColor: "#4da6ff",
-    padding: 16,
-    borderRadius: 12,
-    alignItems: "center",
-  },
-  joinButtonText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
+  centered: { justifyContent: "center", alignItems: "center" },
+  tabContainer: { flexDirection: "row", backgroundColor: "#1a1a1a", borderBottomWidth: 1, borderBottomColor: "#333" },
+  tab: { flex: 1, paddingVertical: 15, alignItems: "center" },
+  activeTab: { borderBottomWidth: 3, borderBottomColor: "#4da6ff" },
+  tabText: { color: "#888", fontSize: 16, fontWeight: "bold" },
+  activeTabText: { color: "#4da6ff" },
+  listContainer: { padding: 16, paddingBottom: 80 },
+  card: { backgroundColor: "#1e1e1e", borderRadius: 12, padding: 20, marginBottom: 16, borderWidth: 1, borderColor: "#333" },
+  cardTitle: { fontSize: 20, fontWeight: "bold", color: "#fff", marginBottom: 8 },
+  cardContent: { fontSize: 15, color: "#ccc", lineHeight: 22, marginBottom: 12 },
+  eventDateContainer: { marginTop: 10, backgroundColor: "#252525", padding: 10, borderRadius: 8, borderWidth: 1, borderColor: "#333" },
+  eventDateText: { fontSize: 14, color: "#4da6ff", fontWeight: "bold" },
+  emptyText: { color: "#888", textAlign: "center", marginTop: 50, fontSize: 16 },
+  fab: { position: "absolute", width: 60, height: 60, alignItems: "center", justifyContent: "center", right: 20, bottom: 20, backgroundColor: "#4da6ff", borderRadius: 30, elevation: 8, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 4 },
+  fabIcon: { fontSize: 30, color: "#fff", fontWeight: "bold", marginTop: -2 }
 });

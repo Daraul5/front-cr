@@ -1,52 +1,35 @@
-// src/screens/LoginScreen.js
-import React, { useState, useContext } from "react"; // <-- 1. Agregamos useContext
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-} from "react-native";
-import { AuthContext } from "../context/AuthContext"; // <-- 2. Importamos tu contexto
+import React, { useState, useContext } from "react";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Alert } from "react-native";
+import { AuthContext } from "../context/AuthContext";
 
 export default function LoginScreen({ navigation }) {
-  const [correo, setCorreo] = useState("");
+  const [numeroControl, setNumeroControl] = useState("");
   const [password, setPassword] = useState("");
-
-  // 3. Extraemos la función 'login' del estado global
-  const { login } = useContext(AuthContext);
+  const { login, isLoading } = useContext(AuthContext);
 
   const handleLogin = () => {
-    if (correo.trim() === "" || password.trim() === "") return;
-
-    // 4. Ejecutamos la función global con los datos del input
-    login(correo, password);
+    if (numeroControl.trim() === "" || password.trim() === "") {
+      Alert.alert("Campos incompletos", "Por favor llena todos los campos.");
+      return;
+    }
+    login(numeroControl, password);
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <View style={styles.formContainer}>
         <View style={styles.header}>
-          <Text style={styles.title}>Bienvenido de vuelta</Text>
-          <Text style={styles.subtitle}>
-            Ingresa al panel del Club de Robótica
-          </Text>
+          <Text style={styles.title}>Inicio de Sesión</Text>
+          <Text style={styles.subtitle}>Panel del Club de Robótica</Text>
         </View>
 
         <TextInput
           style={styles.input}
-          placeholder="Correo institucional"
+          placeholder="Número de Control"
           placeholderTextColor="#888"
-          value={correo}
-          onChangeText={setCorreo}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          keyboardAppearance="dark" // El toque oscuro
+          value={numeroControl}
+          onChangeText={setNumeroControl}
+          keyboardType="numeric"
         />
 
         <TextInput
@@ -56,80 +39,29 @@ export default function LoginScreen({ navigation }) {
           value={password}
           onChangeText={setPassword}
           secureTextEntry={true}
-          keyboardAppearance="dark" // El toque oscuro
         />
 
-        <TouchableOpacity style={styles.button} onPress={handleLogin}>
-          <Text style={styles.buttonText}>Iniciar Sesión</Text>
+        <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={isLoading}>
+          {isLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Entrar</Text>}
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.linkButton}
-          onPress={() => navigation.navigate("Register")}
-        >
-          <Text style={styles.linkText}>
-            ¿Aún no envías tu solicitud? Regístrate aquí
-          </Text>
+        <TouchableOpacity style={styles.linkButton} onPress={() => navigation.navigate("Register")}>
+          <Text style={styles.linkText}>¿No tienes cuenta? Regístrate aquí</Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
   );
 }
 
-// ... (Tus estilos se quedan exactamente igual)
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#121212",
-  },
-  formContainer: {
-    flex: 1,
-    justifyContent: "center",
-    padding: 24,
-  },
-  header: {
-    marginBottom: 32,
-    alignItems: "center",
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#fff",
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: "#a0a0a0",
-    textAlign: "center",
-  },
-  input: {
-    backgroundColor: "#1e1e1e",
-    color: "#fff",
-    padding: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#333",
-    marginBottom: 16,
-  },
-  button: {
-    backgroundColor: "#4da6ff", // Azul robótico
-    padding: 16,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 8,
-  },
-  buttonText: {
-    color: "#ffffff",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-  linkButton: {
-    marginTop: 24,
-    alignItems: "center",
-  },
-  linkText: {
-    color: "#4da6ff",
-    fontSize: 14,
-    textDecorationLine: "underline",
-  },
+  container: { flex: 1, backgroundColor: "#121212" },
+  formContainer: { flex: 1, justifyContent: "center", padding: 24 },
+  header: { marginBottom: 32, alignItems: "center" },
+  title: { fontSize: 28, fontWeight: "bold", color: "#fff", marginBottom: 8 },
+  subtitle: { fontSize: 16, color: "#a0a0a0" },
+  input: { backgroundColor: "#1e1e1e", color: "#fff", padding: 16, borderRadius: 8, marginBottom: 16, borderWidth: 1, borderColor: "#333" },
+  button: { backgroundColor: "#4da6ff", padding: 16, borderRadius: 8, alignItems: "center" },
+  buttonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
+  linkButton: { marginTop: 24, alignItems: "center" },
+  linkText: { color: "#4da6ff", fontSize: 14, textDecorationLine: "underline" }
 });

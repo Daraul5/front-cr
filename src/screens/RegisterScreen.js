@@ -1,4 +1,3 @@
-// src/screens/RegisterScreen.js
 import React, { useState } from "react";
 import {
   View,
@@ -6,119 +5,174 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
   ScrollView,
+  Alert,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform
 } from "react-native";
+import api from "../api/api";
 
 export default function RegisterScreen({ navigation }) {
-  // Estados para los 6 campos solicitados
+  // Estados para datos personales
   const [nombre, setNombre] = useState("");
-  const [carrera, setCarrera] = useState("");
-  const [semestre, setSemestre] = useState("");
   const [numeroControl, setNumeroControl] = useState("");
   const [correo, setCorreo] = useState("");
-  const [motivo, setMotivo] = useState("");
+  const [password, setPassword] = useState("");
+  const [carrera, setCarrera] = useState("1"); // ID por defecto
 
-  const handleRegister = () => {
-    // Aquí luego enviaremos los datos a la pestaña de solicitudes del Admin
-    console.log("Solicitud enviada:", {
-      nombre,
-      carrera,
-      semestre,
-      numeroControl,
-      correo,
-      motivo,
-    });
+  // Estados para la solicitud al club
+  const [habilidades, setHabilidades] = useState("");
+  const [motivos, setMotivos] = useState("");
+  const [proyectos, setProyectos] = useState("");
+
+  const [loading, setLoading] = useState(false);
+
+  const handleRegister = async () => {
+    // Validamos que ningún campo se vaya vacío
+    if (!nombre || !numeroControl || !correo || !password || !habilidades || !motivos || !proyectos) {
+      Alert.alert("Error", "Todos los campos de la solicitud son obligatorios.");
+      return;
+    }
+
+    setLoading(true);
+
+    // Armamos el objeto exactamente como lo espera el RegisterRequest de Java
+    const nuevoUsuario = {
+      controlNumber: numeroControl,
+      name: nombre,
+      email: correo,
+      password: password,
+      phone: "0000000000",
+      career: {
+        idCareer: parseInt(carrera) 
+      },
+      // Campos nuevos para la tabla 'solicitud'
+      skills: habilidades,
+      reason: motivos,
+      projects: proyectos
+    };
+
+    try {
+      await api.post("/auth/register", nuevoUsuario);
+      Alert.alert("Solicitud Enviada", "Tus datos han sido recibidos y están en estado PENDIENTE.");
+      // Limpiamos los campos (opcional) y mandamos al usuario al Login
+      navigation.navigate("Login");
+    } catch (error) {
+      console.error("Error en registro:", error.response?.data || error.message);
+      Alert.alert("Error", "No se pudo enviar la solicitud. Verifica tus datos.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
+    <KeyboardAvoidingView 
+      style={styles.container} 
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      {/* ScrollView permite deslizar el contenido cuando el teclado lo empuja */}
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Únete al Club</Text>
-          <Text style={styles.subtitle}>
-            Envía tu solicitud para evaluación
-          </Text>
-        </View>
+        <Text style={styles.title}>Solicitud de Ingreso</Text>
+        <Text style={styles.subtitle}>Completa tu perfil para unirte al club</Text>
 
         <View style={styles.form}>
+          {/* DATOS PERSONALES */}
+          <Text style={styles.sectionTitle}>Datos Personales</Text>
+
+          <Text style={styles.label}>Nombre Completo</Text>
           <TextInput
             style={styles.input}
-            placeholder="Nombre completo"
-            placeholderTextColor="#888"
+            placeholder="Nombre"
+            placeholderTextColor="#555"
             value={nombre}
             onChangeText={setNombre}
-            keyboardAppearance="dark"
           />
 
+          <Text style={styles.label}>Número de Control</Text>
           <TextInput
             style={styles.input}
-            placeholder="Carrera"
-            placeholderTextColor="#888"
-            value={carrera}
-            onChangeText={setCarrera}
-            keyboardAppearance="dark"
+            placeholder="Matricula"
+            placeholderTextColor="#555"
+            value={numeroControl}
+            onChangeText={setNumeroControl}
+            keyboardType="numeric"
           />
 
-          {/* Fila para agrupar Semestre y No. de Control para ahorrar espacio */}
-          <View style={styles.row}>
-            <TextInput
-              style={[styles.input, styles.halfInput]}
-              placeholder="Semestre (Ej. 6to)"
-              placeholderTextColor="#888"
-              value={semestre}
-              onChangeText={setSemestre}
-              keyboardAppearance="dark"
-            />
-            <TextInput
-              style={[styles.input, styles.halfInput]}
-              placeholder="No. de Control"
-              placeholderTextColor="#888"
-              value={numeroControl}
-              onChangeText={setNumeroControl}
-              keyboardType="numeric"
-              keyboardAppearance="dark" // Muestra el teclado numérico en el celular
-            />
-          </View>
-
+          <Text style={styles.label}>Correo Institucional</Text>
           <TextInput
             style={styles.input}
-            placeholder="Correo institucional"
-            placeholderTextColor="#888"
+            placeholder="ejemplo@tuxtla.tecnm.mx"
+            placeholderTextColor="#555"
             value={correo}
             onChangeText={setCorreo}
             keyboardType="email-address"
             autoCapitalize="none"
-            keyboardAppearance="dark" // Evita que la primera letra se ponga en mayúscula
           />
 
+          <Text style={styles.label}>Contraseña</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Contraseña"
+            placeholderTextColor="#555"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+          />
+
+          {/* PERFIL DE INGRESO */}
+          <Text style={styles.sectionTitle}>Perfil Técnico</Text>
+
+          <Text style={styles.label}>Habilidades (Lenguajes, herramientas)</Text>
           <TextInput
             style={[styles.input, styles.textArea]}
-            placeholder="¿Por qué quieres unirte al Club de Robótica?"
-            placeholderTextColor="#888"
-            value={motivo}
-            onChangeText={setMotivo}
-            multiline
-            keyboardAppearance="dark"
+            placeholder="Ej. Programacion en C++, Arduino..."
+            placeholderTextColor="#555"
+            value={habilidades}
+            onChangeText={setHabilidades}
+            multiline={true}
+            numberOfLines={3}
+            textAlignVertical="top"
           />
 
-          <TouchableOpacity style={styles.button} onPress={handleRegister}>
-            <Text style={styles.buttonText}>Enviar Solicitud</Text>
+          <Text style={styles.label}>Motivos para unirte</Text>
+          <TextInput
+            style={[styles.input, styles.textArea]}
+            placeholder="Ej. Quiero aprender a armar robots..."
+            placeholderTextColor="#555"
+            value={motivos}
+            onChangeText={setMotivos}
+            multiline={true}
+            numberOfLines={3}
+            textAlignVertical="top"
+          />
+
+          <Text style={styles.label}>Proyectos previos</Text>
+          <TextInput
+            style={[styles.input, styles.textArea]}
+            placeholder="Ej. Brazo robotico en 2do semestre o Ninguno"
+            placeholderTextColor="#555"
+            value={proyectos}
+            onChangeText={setProyectos}
+            multiline={true}
+            numberOfLines={3}
+            textAlignVertical="top"
+          />
+
+          <TouchableOpacity 
+            style={[styles.button, loading && styles.buttonDisabled]} 
+            onPress={handleRegister}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>Enviar Solicitud</Text>
+            )}
           </TouchableOpacity>
 
-          {/* Botón para cambiar al Login si ya tienen cuenta */}
-          <TouchableOpacity
-            style={styles.linkButton}
-            onPress={() => navigation.navigate("Login")}
-          >
-            <Text style={styles.linkText}>
-              ¿Ya fuiste aceptado? Inicia sesión aquí
-            </Text>
+          {/* Enlace corregido para navegar al Login */}
+          <TouchableOpacity onPress={() => navigation.navigate("Login")} style={styles.link}>
+            <Text style={styles.linkText}>¿Ya tienes cuenta? Inicia sesión</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -127,72 +181,18 @@ export default function RegisterScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#121212",
-  },
-  scrollContainer: {
-    padding: 24,
-    flexGrow: 1, // Asegura que el contenido se expanda correctamente
-    justifyContent: "center",
-  },
-  header: {
-    marginBottom: 32,
-    alignItems: "center",
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#fff",
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: "#a0a0a0",
-    textAlign: "center",
-  },
-  form: {
-    width: "100%",
-  },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  halfInput: {
-    width: "48%", // Cada uno ocupa un poco menos de la mitad para dejar margen
-  },
-  input: {
-    backgroundColor: "#1e1e1e",
-    color: "#fff",
-    padding: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#333",
-    marginBottom: 16,
-  },
-  textArea: {
-    height: 120,
-    textAlignVertical: "top",
-  },
-  button: {
-    backgroundColor: "#4da6ff",
-    padding: 16,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 8,
-  },
-  buttonText: {
-    color: "#ffffff",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-  linkButton: {
-    marginTop: 24,
-    alignItems: "center",
-  },
-  linkText: {
-    color: "#4da6ff",
-    fontSize: 14,
-    textDecorationLine: "underline",
-  },
+  container: { flex: 1, backgroundColor: "#121212" },
+  scrollContainer: { padding: 24, paddingVertical: 40 },
+  title: { fontSize: 28, fontWeight: "bold", color: "#fff", textAlign: "center", marginTop: 20 },
+  subtitle: { fontSize: 16, color: "#a0a0a0", textAlign: "center", marginBottom: 30 },
+  sectionTitle: { fontSize: 18, fontWeight: "bold", color: "#fff", marginTop: 15, marginBottom: 15, borderBottomWidth: 1, borderBottomColor: "#333", paddingBottom: 5 },
+  form: { marginTop: 10 },
+  label: { color: "#4da6ff", fontSize: 14, marginBottom: 8, fontWeight: "600" },
+  input: { backgroundColor: "#1e1e1e", color: "#fff", padding: 16, borderRadius: 12, borderWidth: 1, borderColor: "#333", marginBottom: 20 },
+  textArea: { minHeight: 100 },
+  button: { backgroundColor: "#4da6ff", padding: 18, borderRadius: 12, alignItems: "center", marginTop: 10, marginBottom: 20 },
+  buttonDisabled: { backgroundColor: "#2a5a8a" },
+  buttonText: { color: "#fff", fontWeight: "bold", fontSize: 18 },
+  link: { marginBottom: 30, alignItems: "center" },
+  linkText: { color: "#4da6ff", textDecorationLine: "underline" }
 });

@@ -1,107 +1,162 @@
-// src/screens/RequestsScreen.js
-import React from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
+import React, { useState, useEffect } from "react";
+import { 
+  View, 
+  Text, 
+  FlatList, 
+  TouchableOpacity, 
+  StyleSheet, 
+  ActivityIndicator, 
+  Alert,
+  RefreshControl
 } from "react-native";
-import { useRequests } from "../hooks/useRequests"; // ¡Importamos nuestro nuevo Hook!
+import api from "../api/api";
 
 export default function RequestsScreen() {
-  // Extraemos la lógica y el estado en una sola línea
-  const { requests, handleAccept, handleReject } = useRequests();
+  const [solicitudes, setSolicitudes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const renderRequest = ({ item }) => (
-    <View style={styles.card}>
-      <Text style={styles.name}>{item.nombre}</Text>
-      <Text style={styles.details}>
-        {item.carrera} - {item.semestre} Semestre
-      </Text>
-      <Text style={styles.motivo}>"{item.motivo}"</Text>
+  const fetchSolicitudes = async () => {
+    try {
+      const response = await api.get("/applications/pending");
+      setSolicitudes(response.data);
+    } catch (error) {
+      console.error("Error al cargar solicitudes:", error);
+      Alert.alert("Error", "No se pudieron cargar las solicitudes pendientes.");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
-      <View style={styles.actions}>
-        <TouchableOpacity
-          style={[styles.button, styles.rejectButton]}
-          onPress={() => handleReject(item.id)}
-        >
-          <Text style={styles.buttonText}>Rechazar</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.button, styles.acceptButton]}
-          onPress={() => handleAccept(item.id, item.nombre)}
-        >
-          <Text style={styles.buttonText}>Aceptar</Text>
-        </TouchableOpacity>
+  useEffect(() => {
+    fetchSolicitudes();
+  }, []);
+
+  const handleAprobar = async (id) => {
+    try {
+      await api.put(`/applications/${id}/approve`);
+      Alert.alert("Aprobado", "El usuario ha sido aceptado y ahora es MIEMBRO del club.");
+      // Actualizamos la lista localmente para quitar la tarjeta sin recargar todo
+      setSolicitudes(solicitudes.filter(item => item.idApplication !== id));
+    } catch (error) {
+      console.error("Error al aprobar:", error);
+      Alert.alert("Error", "No se pudo aprobar la solicitud.");
+    }
+  };
+
+  const handleRechazar = async (id) => {
+    Alert.alert(
+      "Confirmar Rechazo",
+      "¿Estás seguro de que deseas rechazar esta solicitud?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        { 
+          text: "Sí, rechazar", 
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await api.put(`/applications/${id}/reject`);
+              setSolicitudes(solicitudes.filter(item => item.idApplication !== id));
+            } catch (error) {
+              console.error("Error al rechazar:", error);
+              Alert.alert("Error", "No se pudo rechazar la solicitud.");
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <ActivityIndicator size="large" color="#4da6ff" />
       </View>
-    </View>
-  );
+    );
+  }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.headerTitle}>Solicitudes Pendientes</Text>
-      {requests.length === 0 ? (
-        <Text style={styles.emptyText}>No hay solicitudes nuevas.</Text>
-      ) : (
-        <FlatList
-          data={requests}
-          keyExtractor={(item) => item.id}
-          renderItem={renderRequest}
-          contentContainerStyle={styles.listContainer}
-        />
-      )}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Panel de Administración</Text>
+        <Text style={styles.subHeader}>
+          Solicitudes Pendientes: {solicitudes.length}
+        </Text>
+      </View>
+
+      <FlatList
+        data={solicitudes}
+        keyExtractor={(item) => item.idApplication?.toString() || Math.random().toString()}
+        contentContainerStyle={styles.listContainer}
+        refreshControl={
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={() => { setRefreshing(true); fetchSolicitudes(); }} 
+            tintColor="#4da6ff" 
+          />
+        }
+        renderItem={({ item }) => (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.name}>{item.user?.name || "Usuario Desconocido"}</Text>
+              <Text style={styles.control}>Matrícula: {item.user?.controlNumber}</Text>
+            </View>
+
+            <View style={styles.infoBox}>
+              <Text style={styles.label}>Habilidades:</Text>
+              <Text style={styles.text}>{item.skills}</Text>
+
+              <Text style={styles.label}>Motivos:</Text>
+              <Text style={styles.text}>{item.reason}</Text>
+
+              <Text style={styles.label}>Proyectos Previos:</Text>
+              <Text style={styles.text}>{item.projects}</Text>
+            </View>
+
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity 
+                style={[styles.button, styles.btnReject]} 
+                onPress={() => handleRechazar(item.idApplication)}
+              >
+                <Text style={styles.buttonText}>Rechazar</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.button, styles.btnApprove]} 
+                onPress={() => handleAprobar(item.idApplication)}
+              >
+                <Text style={styles.buttonText}>Aprobar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+        ListEmptyComponent={
+          <Text style={styles.emptyText}>No hay solicitudes pendientes por revisar.</Text>
+        }
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#121212" },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "#fff",
-    padding: 20,
-    textAlign: "center",
-    borderBottomWidth: 1,
-    borderBottomColor: "#333",
-  },
-  listContainer: { padding: 16 },
-  card: {
-    backgroundColor: "#1e1e1e",
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "#333",
-  },
-  name: { fontSize: 18, fontWeight: "bold", color: "#fff", marginBottom: 4 },
-  details: { fontSize: 14, color: "#4da6ff", marginBottom: 8 },
-  motivo: {
-    fontSize: 14,
-    color: "#a0a0a0",
-    fontStyle: "italic",
-    marginBottom: 16,
-  },
-  actions: { flexDirection: "row", justifyContent: "space-between" },
-  button: {
-    flex: 1,
-    padding: 12,
-    borderRadius: 8,
-    alignItems: "center",
-    marginHorizontal: 4,
-  },
-  rejectButton: {
-    backgroundColor: "transparent",
-    borderWidth: 1,
-    borderColor: "#ff4d4d",
-  },
-  acceptButton: { backgroundColor: "#4da6ff" },
-  buttonText: { color: "#fff", fontWeight: "bold" },
-  emptyText: {
-    color: "#a0a0a0",
-    textAlign: "center",
-    marginTop: 40,
-    fontSize: 16,
-  },
+  centered: { justifyContent: "center", alignItems: "center" },
+  header: { padding: 20, backgroundColor: "#1a1a1a", borderBottomWidth: 1, borderBottomColor: "#333" },
+  headerTitle: { fontSize: 24, fontWeight: "bold", color: "#fff" },
+  subHeader: { fontSize: 16, color: "#4da6ff", marginTop: 5 },
+  listContainer: { padding: 16, paddingBottom: 50 },
+  card: { backgroundColor: "#1e1e1e", borderRadius: 12, padding: 20, marginBottom: 20, borderWidth: 1, borderColor: "#333" },
+  cardHeader: { borderBottomWidth: 1, borderBottomColor: "#333", paddingBottom: 10, marginBottom: 15 },
+  name: { fontSize: 20, fontWeight: "bold", color: "#fff" },
+  control: { fontSize: 14, color: "#a0a0a0", marginTop: 4 },
+  infoBox: { marginBottom: 20 },
+  label: { fontSize: 14, fontWeight: "bold", color: "#4da6ff", marginBottom: 4, marginTop: 10 },
+  text: { fontSize: 15, color: "#eee", lineHeight: 22 },
+  buttonContainer: { flexDirection: "row", justifyContent: "space-between", marginTop: 10 },
+  button: { flex: 1, padding: 14, borderRadius: 8, alignItems: "center", marginHorizontal: 5 },
+  btnReject: { backgroundColor: "#cc0000" },
+  btnApprove: { backgroundColor: "#00b33c" },
+  buttonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
+  emptyText: { color: "#888", textAlign: "center", marginTop: 50, fontSize: 16 }
 });

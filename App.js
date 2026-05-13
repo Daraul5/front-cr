@@ -1,14 +1,14 @@
-// App.js
 import React from "react";
 import { NavigationContainer } from "@react-navigation/native";
+import { AuthProvider } from "./src/context/AuthContext";
 import MainTab from "./src/navigation/MainTab";
-import { AuthProvider } from "./src/context/AuthContext"; // Importamos el proveedor
+import { StatusBar } from "react-native";
 
 export default function App() {
   return (
-    // Envolvemos todo dentro del AuthProvider
     <AuthProvider>
       <NavigationContainer>
+        <StatusBar barStyle="light-content" backgroundColor="#000000" />
         <MainTab />
       </NavigationContainer>
     </AuthProvider>
